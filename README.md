@@ -1,5 +1,5 @@
 # cmath
-cmath.lua is an extension of the lua standard math library to include complex arithmetic.
+cmath.lua is an extension of the lua standard math library to include complex arithmetic.  It requires lua 5.3.
 
 It is intended to be a drop-in replacement for math.lua in thoses cases where complex arithmetic is needed.  Other than
 using (for example) "cmath.sin()" instead of "math.sin()", the intent is that you should not need to change how you do
