@@ -3,7 +3,13 @@ cmath.lua is an extension of the lua standard math library to include complex ar
 
 It is intended to be a drop-in replacement for math.lua in thoses cases where complex arithmetic is needed.  Other than
 using (for example) "cmath.sin()" instead of "math.sin()", the intent is that you should not need to change how you do
-math in lua in any way.  Normal usage begins with
+math in lua in any way.
+
+To download from github, you can use the following command:
+
+ - git clone http://github.com/gregfjohnson/cmath
+
+Normal usage begins with
 
  require 'cmath'
 
@@ -43,19 +49,16 @@ to extreme means via, for example, the debug library.  As with standard lua numb
 
 Known issues
 
-Currently, type(c) returns 'table' for complex values.  I'm not sure how to fix that.  It would be nice if type(c) could
-be made to report 'number' even for complex values.  However, cmath.type(c) does correctly
-return 'complex' for complex values.
+Currently, type(c) returns 'table' for complex values.  I chose not to re-define the global lua 'type()' function.
+However, cmath.type(c) does correctly return 'complex' for complex values.
 
 In the current version of cmath.lua, attempts to compare complex values with standard numbers do not work.
 I.e., 
 
  - e ^ (pi * i) == -1
 
-incorrectly returns false.  Equality works as expected
-if both values are complex:
+incorrectly returns false.  Equality works as expected if both values are complex:
 
  - e ^ (pi * i) == -1 + 0*i
  
 correctly returns true.
-
