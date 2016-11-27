@@ -1,5 +1,5 @@
 # cmath
-cmath.lua is an extension of the lua standard math library to include complex arithmetic.  It requires lua 5.3.
+cmath.lua is an extension of the lua standard math library to include complex arithmetic.  It has been tested on lua 5.1 and 5.3.
 
 It is intended to be a drop-in replacement for math.lua in thoses cases where complex arithmetic is needed.  Other than
 using (for example) "cmath.sin()" instead of "math.sin()", the intent is that you should not need to change how you do
@@ -23,7 +23,7 @@ For those who prefer not to do requires that implicitly change the global namesp
 
 In those cases where a function can be extended to handle
 complex values, the original function in math.lua is given additional functionality.
-For example, cmath.sqrt(-1) returns i * 1.0.
+For example, cmath.sqrt(-1) returns i.
 
 In addition to all of the standard functions and values in math.lua, four new things have been added to cmath:
 
