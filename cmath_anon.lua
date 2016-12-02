@@ -95,6 +95,19 @@ local im = function(c)
     end
 end
 
+-- if a complex value is close enough to the real line, make it real.
+-- this helps with equality comparisons.
+
+local to_real_if_possible = function(c)
+    local result = c
+
+    if math.abs(im(c)) < c3.eps then
+        result = re(c)
+    end
+
+    return result
+end
+
 -- create a function for insertion into the cmath
 -- table, that examines the type of its argument
 -- and either applies the math.lua version of the
@@ -112,7 +125,7 @@ local applyOldOrNew = function(cfn, rfn, name)
                string.format("bad argument %s(number expected)", name))
 
         if ctype(c) == 'complex' then
-            return cfn(c)
+            return to_real_if_possible(cfn(c))
 
         else
             return rfn(c)
@@ -211,26 +224,26 @@ end
 c3.__add = function(v1, v2)
     v1, v2 = to_complex(v1), to_complex(v2)
 
-    return create(re(v1) + re(v2), im(v1) + im(v2))
+    return to_real_if_possible(create(re(v1) + re(v2), im(v1) + im(v2)))
 end
 
 c3.__sub = function(v1, v2)
     v1, v2 = to_complex(v1), to_complex(v2)
 
-    return create(re(v1) - re(v2), im(v1) - im(v2))
+    return to_real_if_possible(create(re(v1) - re(v2), im(v1) - im(v2)))
 end
 
 c3.__unm = function(v)
     v = to_complex(v)
 
-    return create(-re(v), -im(v))
+    return to_real_if_possible(create(-re(v), -im(v)))
 end
 
 c3.__mul = function(v1, v2)
     v1, v2 = to_complex(v1), to_complex(v2)
 
-    return create(re(v1) * re(v2) - im(v1) * im(v2),
-                  re(v1) * im(v2) + im(v1) * re(v2))
+    return to_real_if_possible(create(re(v1) * re(v2) - im(v1) * im(v2),
+                                      re(v1) * im(v2) + im(v1) * re(v2)))
 end
 
 -- equality with tolerance; real parts must be closer
@@ -254,7 +267,7 @@ c3.__div = function(v1, v2)
     local v2InverseDenom = re(v2) * re(v2) + im(v2) * im(v2)
     local v2Inverse      = create( re(v2) / v2InverseDenom,
                                   -im(v2) / v2InverseDenom)
-    return v1 * v2Inverse
+    return to_real_if_possible(v1 * v2Inverse)
 end
 
 local abs = applyOldOrNew(
@@ -273,7 +286,7 @@ c3.__pow = function(c, cpow)
     local angle = re(cpow)*theta + im(cpow)*luamath.log(r)
     result = result * create(luamath.cos(angle), luamath.sin(angle))
 
-    return result
+    return to_real_if_possible(result)
 end
 
 c3.__index = function(t, key)
@@ -396,7 +409,7 @@ local normalizeAsin = function(c, low, high)
 end
 
 local complexAsin = function(c)
-    return normalizeAsin(-I * log(I * c + sqrt(1 - c*c)), -luamath.pi/2, luamath.pi/2)
+    return  normalizeAsin(-I * log(I * c + sqrt(1 - c*c)), -luamath.pi/2, luamath.pi/2)
 end
 
 local normalizeAtan = function(c, low, high)
@@ -416,7 +429,7 @@ local complexAtan = function(num, den)
     den = den or create(1)
 
     if den == I * 0 then
-        return create(0)
+        return 0
     else
         local x = num / den
         return normalizeAtan(I / 2 * log((I + x) / (I - x)), -luamath.pi/2, luamath.pi/2)
