@@ -98,14 +98,59 @@ local im = function(c)
     end
 end
 
--- if a complex value is close enough to the real line, make it real.
--- this helps with equality comparisons.
+local function closeToInt(r)
+    local _, frac = math.modf(r)
 
-local to_real_if_possible = function(c)
-    local result = c
+    if math.abs(frac) < c3.eps then
+        return true
+    else
+        local nearOne = math.abs(frac) - 1
+        return math.abs(nearOne) < c3.eps
+    end
+end
+
+local function toIntIfPossible(r)
+    if not closeToInt(r) then return r end
+
+    local int, frac = math.modf(r)
+    local result
+
+    if math.abs(frac) < c3.eps then
+        result = int
+
+    elseif frac > 0 then
+        result = int + 1
+
+    else
+        result = int - 1
+    end
+
+    return result
+end
+if TEST then
+    local eps2 = c3.eps / 2
+    test:check( 4, toIntIfPossible( 4 + eps2), 'toIntIfPossible  4+eps')
+    test:check( 4, toIntIfPossible( 4 - eps2), 'toIntIfPossible  4-eps')
+    test:check(-4, toIntIfPossible(-4 + eps2), 'toIntIfPossible -4+eps')
+    test:check(-4, toIntIfPossible(-4 - eps2), 'toIntIfPossible -4-eps')
+end
+
+-- if a complex value is close enough to the real line, make it real.
+-- if either real part of complex part is close to an integer, make
+-- it an integer.
+
+local simplifyNumber = function(c)
+    local result
 
     if math.abs(im(c)) < c3.eps then
-        result = re(c)
+        result = toIntIfPossible(re(c))
+
+    elseif not closeToInt(re(c)) and not closeToInt(im(c)) then 
+        result = c 
+
+    else
+        result = create(toIntIfPossible(re(c)),
+                        toIntIfPossible(im(c)))
     end
 
     return result
@@ -128,7 +173,7 @@ local applyOldOrNew = function(cfn, rfn, name)
                string.format("bad argument %s(number expected)", name))
 
         if cmath_type(c) == 'complex' then
-            return to_real_if_possible(cfn(c))
+            return simplifyNumber(cfn(c))
 
         else
             return rfn(c)
@@ -227,25 +272,25 @@ end
 c3.__add = function(v1, v2)
     v1, v2 = to_complex(v1), to_complex(v2)
 
-    return to_real_if_possible(create(re(v1) + re(v2), im(v1) + im(v2)))
+    return simplifyNumber(create(re(v1) + re(v2), im(v1) + im(v2)))
 end
 
 c3.__sub = function(v1, v2)
     v1, v2 = to_complex(v1), to_complex(v2)
 
-    return to_real_if_possible(create(re(v1) - re(v2), im(v1) - im(v2)))
+    return simplifyNumber(create(re(v1) - re(v2), im(v1) - im(v2)))
 end
 
 c3.__unm = function(v)
     v = to_complex(v)
 
-    return to_real_if_possible(create(-re(v), -im(v)))
+    return simplifyNumber(create(-re(v), -im(v)))
 end
 
 c3.__mul = function(v1, v2)
     v1, v2 = to_complex(v1), to_complex(v2)
 
-    return to_real_if_possible(create(re(v1) * re(v2) - im(v1) * im(v2),
+    return simplifyNumber(create(re(v1) * re(v2) - im(v1) * im(v2),
                                       re(v1) * im(v2) + im(v1) * re(v2)))
 end
 
@@ -270,7 +315,7 @@ c3.__div = function(v1, v2)
     local v2InverseDenom = re(v2) * re(v2) + im(v2) * im(v2)
     local v2Inverse      = create( re(v2) / v2InverseDenom,
                                   -im(v2) / v2InverseDenom)
-    return to_real_if_possible(v1 * v2Inverse)
+    return simplifyNumber(v1 * v2Inverse)
 end
 
 local abs = applyOldOrNew(
@@ -289,7 +334,7 @@ c3.__pow = function(c, cpow)
     local angle = re(cpow)*theta + im(cpow)*luamath.log(r)
     result = result * create(luamath.cos(angle), luamath.sin(angle))
 
-    return to_real_if_possible(result)
+    return simplifyNumber(result)
 end
 
 c3.__index = function(t, key)
