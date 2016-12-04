@@ -57,7 +57,10 @@ local is_complex = function(c)
     return okPcall and result
 end
 
-local function ctype(c)
+local function typeWithComplex(c)
+end
+
+local function cmath_type(c)
     if is_complex(c) then
         return 'complex'
 
@@ -76,7 +79,7 @@ local function ctype(c)
 end
 
 local re = function(c)
-    if ctype(c) == 'complex' then
+    if cmath_type(c) == 'complex' then
         return values[c].real
     else
         return c + 0.
@@ -84,14 +87,14 @@ local re = function(c)
 end
 
 local im = function(c)
-    if ctype(c) == 'complex' then
+    if cmath_type(c) == 'complex' then
         return values[c].imag
 
     elseif luamath.type(c) ~= nil then
         return 0.
 
     else
-        assert(false, "bad argument #1 to 'im' (number expected)")
+        error("bad argument #1 to 'im' (number expected)")
     end
 end
 
@@ -121,10 +124,10 @@ local applyOldOrNew = function(cfn, rfn, name)
     end
 
     return function(c)
-        assert(ctype(c) ~= nil, 
+        assert(cmath_type(c) ~= nil, 
                string.format("bad argument %s(number expected)", name))
 
-        if ctype(c) == 'complex' then
+        if cmath_type(c) == 'complex' then
             return to_real_if_possible(cfn(c))
 
         else
@@ -218,7 +221,7 @@ c3.__tostring = function(c)
 end
 
 c3.__len = function(v1, v2)
-    assert(false, 'attempt to get length of a complex value')
+    error('attempt to get length of a complex value')
 end
 
 c3.__add = function(v1, v2)
@@ -290,45 +293,45 @@ c3.__pow = function(c, cpow)
 end
 
 c3.__index = function(t, key)
-    assert(false, "error:  " ..
+    error("error:  " ..
            "attempt to index a complex number.")
 end
 
 c3.__newindex =
     function()
-        assert(false, "error:  " ..
+        error("error:  " ..
                "cannot create or change fields in a complex value")
     end
 
 c3.__lt =
     function()
-        assert(false, "error:  " ..
+        error("error:  " ..
                "complex numbers are not totally ordered.")
     end
 
 c3.__le =
     function()
-        assert(false, "error:  " ..
+        error("error:  " ..
                "complex numbers are not totally ordered.")
     end
 
 c3.__mod =
     function()
-        assert(false, "error:  " ..
+        error("error:  " ..
                "modular arithmetic is not defined on complex numbers.")
     end
 
 c3.__idiv =
     function()
-        assert(false, "error:  " ..
+        error("error:  " ..
                "integer division is not defined on complex numbers.")
     end
 
 c3.__metatable = "There is no metatable."
 
 c3.__pairs =
-    function() assert(false,
-        "bad argument #1 to 'pairs' (table expected, got complex value)")
+    function()
+        error("bad argument #1 to 'pairs' (table expected, got complex value)")
     end
 
 local angle = applyOldOrNew(
@@ -449,7 +452,7 @@ local cmath = {}
 for k,v in pairs(luamath) do
     if type(v) == 'function' then
         cmath[k] = applyOldOrNew(
-            function () assert(false, 'invalid operation on complex value') end,
+            function () error('invalid operation on complex value') end,
             v)
     else
         cmath[k] = v
@@ -463,7 +466,7 @@ cmath.re      = re
 cmath.im      = im
 
 -- math library functions with extensions to work on complex numbers..
-cmath.type    = ctype
+cmath.type    = cmath_type
 cmath.abs     = abs
 cmath.exp     = exp
 cmath.sqrt    = sqrt
