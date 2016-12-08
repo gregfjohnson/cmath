@@ -404,13 +404,13 @@ local log = function(c)
 end
 
 local log = applyOldOrNew(
-            log,
-            function(r)
-                if r > 0 then return luamath.log(r)
-                else          return log(r)
-                end
-            end,
-            'log')
+        log,
+        function(r)
+            if r > 0 then return luamath.log(r)
+            else          return log(r)
+            end
+        end,
+        'log')
 
 local log10 = applyOldOrNew(
         function(c) return log(c) / luamath.log(10) end,
@@ -494,12 +494,22 @@ local complexAtan = function(num, den)
     end
 end
 
-local acos  = applyOldOrNew(complexAcos, luamath.acos,  'acos')
-local asin  = applyOldOrNew(complexAsin, luamath.asin,  'asin')
+local acos  = applyOldOrNew(
+        complexAcos,
+        function(r) return luamath.abs(r) > 1 and complexAcos(r) or luamath.acos(r) end,
+        'acos')
+
+local asin  = applyOldOrNew(
+        complexAsin,
+        function(r) return luamath.abs(r) > 1 and complexAsin(r) or luamath.asin(r) end,
+        'asin')
+
 local atan  = applyOldOrNew(complexAtan, luamath.atan,  'atan')
-local atan2 = applyOldOrNew(complexAtan,
-                            function(num, den) den = den or 0; return luamath.atan2(num, den) end,
-                            'atan2')
+
+local atan2 = applyOldOrNew(
+        complexAtan,
+        function(num, den) den = den or 1; return luamath.atan2(num, den) end,
+        'atan2')
 
 local cmath = {}
 

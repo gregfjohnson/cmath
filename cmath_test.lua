@@ -844,20 +844,21 @@ inverseTrigTest = {
 if TESTX then
     for j = 1, #inverseTrigTest do
         local c = inverseTrigTest[j][1] + i * inverseTrigTest[j][2]
+
         local expected_asin  = inverseTrigTest[j][3] + i * inverseTrigTest[j][4]
         local actual_asin    = cmath.asin(c)
-
-        local expected_acos = inverseTrigTest[j][5] + i * inverseTrigTest[j][6]
-        local actual_acos   = cmath.acos(c)
-
-        local expected_atan = inverseTrigTest[j][7] + i * inverseTrigTest[j][8]
-        local actual_atan   = cmath.atan2(c)
 
         test:checkNear(0, relError(expected_asin, actual_asin),
                       'asin ' .. j .. ' ' .. relError(expected_asin, actual_asin))
 
+        local expected_acos = inverseTrigTest[j][5] + i * inverseTrigTest[j][6]
+        local actual_acos   = cmath.acos(c)
+
         test:checkNear(0, relError(expected_acos, actual_acos),
                       'acos ' .. j .. ' ' .. relError(expected_acos, actual_acos))
+
+        local expected_atan = inverseTrigTest[j][7] + i * inverseTrigTest[j][8]
+        local actual_atan   = cmath.atan2(c)
 
         test:checkNear(0, relError(expected_atan, actual_atan),
                       'atan ' .. j .. ' ' .. relError(expected_atan, actual_atan))
