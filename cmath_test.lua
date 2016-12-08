@@ -8,7 +8,10 @@ local i, e, pi = cmath.i, cmath.exp(1), cmath.pi
 local re       = function(c) return cmath.re(c) end
 local im       = function(c) return cmath.im(c) end
 
-local cnew     = function(real,imag) return real + imag * i end
+local cnew     = function(real,imag)
+    real,imag = real or 0, imag or 0
+    return real + imag * i
+end
 
 local function relError(a,b)
     local avg = (a+b) / 2
@@ -49,7 +52,7 @@ if TESTX then
 end
 
 if TESTX then
-    local c = cnew()
+    local c = cnew(0,1)
     test:check('There is no metatable.', getmetatable(c),  "getmetatable")
 end
 
@@ -841,7 +844,6 @@ inverseTrigTest = {
 if TESTX then
     for j = 1, #inverseTrigTest do
         local c = inverseTrigTest[j][1] + i * inverseTrigTest[j][2]
-
         local expected_asin  = inverseTrigTest[j][3] + i * inverseTrigTest[j][4]
         local actual_asin    = cmath.asin(c)
 

@@ -27,6 +27,8 @@ local c3 = {}
 
 c3.eps = 1e-12
 
+local create
+
 -- <key, value> pairs in the values table represent complex values.
 -- the key is the object that represents an instance of
 -- a complex value.
@@ -55,9 +57,6 @@ local is_complex = function(c)
     local okPcall, result = pcall(fn)
 
     return okPcall and result
-end
-
-local function typeWithComplex(c)
 end
 
 local function cmath_type(c)
@@ -90,7 +89,7 @@ local im = function(c)
     if cmath_type(c) == 'complex' then
         return values[c].imag
 
-    elseif luamath.type(c) ~= nil then
+    elseif type(c) == 'number' then
         return 0.
 
     else
@@ -186,7 +185,7 @@ end
 -- if one real argument x, create complex x + 0i
 -- if one complex value, copy the value.
 -- if two real values x and y, create x + iy.
-local create = function(...)
+create = function(...)
     local args = {...}
     local a1 = args[1]
     local a2 = args[2]
@@ -487,7 +486,9 @@ end
 local acos  = applyOldOrNew(complexAcos, luamath.acos,  'acos')
 local asin  = applyOldOrNew(complexAsin, luamath.asin,  'asin')
 local atan  = applyOldOrNew(complexAtan, luamath.atan,  'atan')
-local atan2 = applyOldOrNew(complexAtan, luamath.atan2, 'atan2')
+local atan2 = applyOldOrNew(complexAtan,
+                            function(num, den) den = den or 0; return luamath.atan2(num, den) end,
+                            'atan2')
 
 local cmath = {}
 
