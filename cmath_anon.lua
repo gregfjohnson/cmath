@@ -126,7 +126,7 @@ local function toIntIfPossible(r)
 
     return result
 end
-if TEST then
+if TESTX then
     local eps2 = c3.eps / 2
     test:check( 4, toIntIfPossible( 4 + eps2), 'toIntIfPossible  4+eps')
     test:check( 4, toIntIfPossible( 4 - eps2), 'toIntIfPossible  4-eps')
@@ -380,7 +380,7 @@ c3.__pairs =
 
 local angle = applyOldOrNew(
         function(c) return luamath.atan2(im(c), re(c)) % (2*luamath.pi) end,
-        function() return 0. end,
+        function(c) return c >= 0 and 0. or luamath.pi end,
         'angle')
 
 local exp = applyOldOrNew(
@@ -403,11 +403,22 @@ local log = function(c)
     return create(luamath.log(abs(c)), theta)
 end
 
-local log = applyOldOrNew(log, luamath.log, 'log')
+local log = applyOldOrNew(
+            log,
+            function(r)
+                if r > 0 then return luamath.log(r)
+                else          return log(r)
+                end
+            end,
+            'log')
 
 local log10 = applyOldOrNew(
         function(c) return log(c) / luamath.log(10) end,
-        luamath.log10,
+        function(r)
+            if r > 0 then return luamath.log10(r)
+            else          return log(r) / luamath.log(10)
+            end
+        end,
         'exp')
 
 local cosh = function (r)
