@@ -19,6 +19,7 @@
     -- run the tests; "-a" will run all tests, no "-a" will run just "TEST" tests.
     test.lua [-a] foobar.lua
 --]]
+package.path = './?.lua'
 
 test = {}
 
