@@ -117,7 +117,10 @@ local function main()
 
             else
                 local fn = function() chunk() end
-                local ok, oops = pcall(fn)
+                local captureTraceback = function(msg)
+                    return tostring(msg) .. '\n' .. debug.traceback()
+                end
+                local ok, oops = xpcall(fn, captureTraceback)
 
                 if not ok then
                     failedTests = failedTests + 1
