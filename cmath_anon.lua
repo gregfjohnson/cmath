@@ -48,10 +48,36 @@ local makeComplex
 -- are inaccessible other than via a values table
 -- entry are eligible for garbage collection.
 
-local values = { }
-setmetatable(values, { __mode = 'k' })
+local kmode = { __mode = 'k' }
+local vmode = { __mode = 'v' }
+
+local values = {}
+setmetatable(values, kmode)
 
 local fooreal = {}
+setmetatable(fooreal, vmode)
+
+function reset()
+    local values = {}
+    setmetatable(values, kmode)
+
+    local fooreal = {}
+    setmetatable(fooreal, vmode)
+end
+
+function state()
+    local valuecount, foorcount, fooicount = 0,0,0
+
+    for _,_ in pairs(values) do valuecount = valuecount+1 end
+
+    for _,itbl in pairs(fooreal) do
+        foorcount = foorcount + 1
+        for _,_ in pairs(itbl) do
+            fooicount = fooicount+1
+        end
+    end
+    print(valuecount, foorcount, fooicount)
+end
 
 local is_complex = function(c)
     local fn = function() return values[c] ~= nil end
@@ -221,8 +247,14 @@ makeComplex = function(...)
         local newc = {}
         setmetatable(newc, c3)
         values[newc] = {real = real, imag = imag}
-        if fooreal[real] == nil then fooreal[real] = {} end
+        ---[[
+        if fooreal[real] == nil then
+            fooreal[real] = {}
+            --setmetatable(fooreal[real], vmode)
+        end
         fooreal[real][imag] = newc
+        ---]]
+
         result = newc
     end
 

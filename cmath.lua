@@ -23,5 +23,6 @@
 --]]
 
 cmath = require 'cmath_anon'
+i, e, pi = cmath.i, cmath.exp(1), cmath.pi
 
 return cmath
