@@ -54,30 +54,11 @@ local vmode = { __mode = 'v' }
 local values = {}
 setmetatable(values, kmode)
 
-local fooreal = {}
-setmetatable(fooreal, vmode)
+-- if values[c] is {real = x, imag = y}, then
+-- valueInverse[x][y] is c
 
-function reset()
-    local values = {}
-    setmetatable(values, kmode)
-
-    local fooreal = {}
-    setmetatable(fooreal, vmode)
-end
-
-function state()
-    local valuecount, foorcount, fooicount = 0,0,0
-
-    for _,_ in pairs(values) do valuecount = valuecount+1 end
-
-    for _,itbl in pairs(fooreal) do
-        foorcount = foorcount + 1
-        for _,_ in pairs(itbl) do
-            fooicount = fooicount+1
-        end
-    end
-    print(valuecount, foorcount, fooicount)
-end
+local valueInverse = {}
+setmetatable(valueInverse, vmode)
 
 local is_complex = function(c)
     local fn = function() return values[c] ~= nil end
@@ -241,19 +222,20 @@ makeComplex = function(...)
     real = toIntIfPossible(real)
     imag = toIntIfPossible(imag)
 
-    if fooreal[real] and fooreal[real][imag] then
-        result = fooreal[real][imag]
+    if valueInverse[real] and valueInverse[real][imag] then
+        result = valueInverse[real][imag]
+
     else
         local newc = {}
         setmetatable(newc, c3)
+
         values[newc] = {real = real, imag = imag}
-        ---[[
-        if fooreal[real] == nil then
-            fooreal[real] = {}
-            --setmetatable(fooreal[real], vmode)
+
+        if valueInverse[real] == nil then
+            valueInverse[real] = {}
         end
-        fooreal[real][imag] = newc
-        ---]]
+
+        valueInverse[real][imag] = newc
 
         result = newc
     end

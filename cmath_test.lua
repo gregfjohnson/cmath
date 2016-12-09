@@ -1,6 +1,7 @@
 -------------------- Test code for cmath --------------------
 -- to run:  ./test.lua -a cmath_test.lua
 -------------------------------------------------------------
+package.path = './?.lua'
 require 'cmath'
 
 local i, e, pi = cmath.i, cmath.exp(1), cmath.pi
