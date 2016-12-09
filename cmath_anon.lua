@@ -27,7 +27,7 @@ local c3 = {}
 
 c3.eps = 1e-12
 
-local create
+local makeComplex
 
 -- <key, value> pairs in the values table represent complex values.
 -- the key is the object that represents an instance of
@@ -50,6 +50,8 @@ local create
 
 local values = { }
 setmetatable(values, { __mode = 'k' })
+
+local fooreal = {}
 
 local is_complex = function(c)
     local fn = function() return values[c] ~= nil end
@@ -81,7 +83,7 @@ local re = function(c)
     if cmath_type(c) == 'complex' then
         return values[c].real
     else
-        return c + 0.
+        return c
     end
 end
 
@@ -90,7 +92,7 @@ local im = function(c)
         return values[c].imag
 
     elseif type(c) == 'number' then
-        return 0.
+        return 0
 
     else
         error("bad argument #1 to 'im' (number expected)")
@@ -143,13 +145,8 @@ local simplifyNumber = function(c)
 
     if math.abs(im(c)) < c3.eps then
         result = toIntIfPossible(re(c))
-
-    elseif not closeToInt(re(c)) and not closeToInt(im(c)) then 
-        result = c 
-
     else
-        result = create(toIntIfPossible(re(c)),
-                        toIntIfPossible(im(c)))
+        result = c 
     end
 
     return result
@@ -181,11 +178,15 @@ local applyOldOrNew = function(cfn, rfn, name)
 end
 
 -- create a new complex value.
+--
 -- if no argument, create 0 + 0i.
 -- if one real argument x, create complex x + 0i
--- if one complex value, copy the value.
+-- if one complex value, return the value.
 -- if two real values x and y, create x + iy.
-create = function(...)
+--
+-- if we make a new complex number, make x and y ints if possible.
+
+makeComplex = function(...)
     local args = {...}
     local a1 = args[1]
     local a2 = args[2]
@@ -197,32 +198,41 @@ create = function(...)
 
     elseif #args == 1 then
         if is_complex(a1) then
-            real, imag = re(a1), im(a1)
-
-        elseif type(a1) == 'number' then
+            return a1
+        else
             real, imag = a1, 0
         end
 
     elseif #args == 2 then
-        if type(a1) == 'number' then real = a1 end
-        if type(a2) == 'number' then imag = a2 end
+        real, imag = a1, a2
     end
 
     assert(type(real) == 'number' and type(imag) == 'number',
            'invalid argument(s)')
 
-    local newc = {}
-    values[newc] = {real = real, imag = imag}
+    local result
 
-    setmetatable(newc, c3)
+    real = toIntIfPossible(real)
+    imag = toIntIfPossible(imag)
 
-    return newc
+    if fooreal[real] and fooreal[real][imag] then
+        result = fooreal[real][imag]
+    else
+        local newc = {}
+        setmetatable(newc, c3)
+        values[newc] = {real = real, imag = imag}
+        if fooreal[real] == nil then fooreal[real] = {} end
+        fooreal[real][imag] = newc
+        result = newc
+    end
+
+    return result
 end
 
-local I = create(0, 1)
+local I = makeComplex(0, 1)
 
 local to_complex = function(c)
-    if not is_complex(c) then c = create(c) end
+    if not is_complex(c) then c = makeComplex(c) end
 
     return c
 end
@@ -271,25 +281,25 @@ end
 c3.__add = function(v1, v2)
     v1, v2 = to_complex(v1), to_complex(v2)
 
-    return simplifyNumber(create(re(v1) + re(v2), im(v1) + im(v2)))
+    return simplifyNumber(makeComplex(re(v1) + re(v2), im(v1) + im(v2)))
 end
 
 c3.__sub = function(v1, v2)
     v1, v2 = to_complex(v1), to_complex(v2)
 
-    return simplifyNumber(create(re(v1) - re(v2), im(v1) - im(v2)))
+    return simplifyNumber(makeComplex(re(v1) - re(v2), im(v1) - im(v2)))
 end
 
 c3.__unm = function(v)
     v = to_complex(v)
 
-    return simplifyNumber(create(-re(v), -im(v)))
+    return simplifyNumber(makeComplex(-re(v), -im(v)))
 end
 
 c3.__mul = function(v1, v2)
     v1, v2 = to_complex(v1), to_complex(v2)
 
-    return simplifyNumber(create(re(v1) * re(v2) - im(v1) * im(v2),
+    return simplifyNumber(makeComplex(re(v1) * re(v2) - im(v1) * im(v2),
                                       re(v1) * im(v2) + im(v1) * re(v2)))
 end
 
@@ -312,8 +322,10 @@ c3.__div = function(v1, v2)
     v2 = to_complex(v2)
 
     local v2InverseDenom = re(v2) * re(v2) + im(v2) * im(v2)
-    local v2Inverse      = create( re(v2) / v2InverseDenom,
+
+    local v2Inverse = makeComplex( re(v2) / v2InverseDenom,
                                   -im(v2) / v2InverseDenom)
+
     return simplifyNumber(v1 * v2Inverse)
 end
 
@@ -331,7 +343,7 @@ c3.__pow = function(c, cpow)
     result = result * luamath.exp(-im(cpow)*theta)
 
     local angle = re(cpow)*theta + im(cpow)*luamath.log(r)
-    result = result * create(luamath.cos(angle), luamath.sin(angle))
+    result = result * makeComplex(luamath.cos(angle), luamath.sin(angle))
 
     return simplifyNumber(result)
 end
@@ -379,9 +391,9 @@ c3.__pairs =
     end
 
 local angle = applyOldOrNew(
-        function(c) return luamath.atan2(im(c), re(c)) % (2*luamath.pi) end,
-        function(c) return c >= 0 and 0. or luamath.pi end,
-        'angle')
+    function(c) return luamath.atan2(im(c), re(c)) % (2*luamath.pi) end,
+    function(c) return c >= 0 and 0. or luamath.pi end,
+    'angle')
 
 local exp = applyOldOrNew(
         function(c) return luamath.exp(1) ^ c end,
@@ -389,37 +401,24 @@ local exp = applyOldOrNew(
         'exp')
 
 local sqrt = applyOldOrNew(
-        function(c) return c ^ .5 end,
-        function(r) if r < 0 then
-                return create(r,0) ^ .5
-            else
-                return luamath.sqrt(r)
-            end
-        end,
-        'exp')
+    function(c) return c ^ .5 end,
+    function(r) return r < 0 and makeComplex(r,0) ^ .5 or luamath.sqrt(r) end,
+    'exp')
 
 local log = function(c)
     local theta = angle(c) % (2 * luamath.pi)
-    return create(luamath.log(abs(c)), theta)
+    return simplifyNumber(makeComplex(luamath.log(abs(c)), theta))
 end
 
 local log = applyOldOrNew(
-        log,
-        function(r)
-            if r > 0 then return luamath.log(r)
-            else          return log(r)
-            end
-        end,
-        'log')
+    log,
+    function(r) return r > 0 and luamath.log(r) or log(r) end,
+    'log')
 
 local log10 = applyOldOrNew(
-        function(c) return log(c) / luamath.log(10) end,
-        function(r)
-            if r > 0 then return luamath.log10(r)
-            else          return log(r) / luamath.log(10)
-            end
-        end,
-        'exp')
+    function(c) return log(c) / luamath.log(10) end,
+    function(r) return r > 0 and luamath.log10(r) or log(r) / luamath.log(10) end,
+    'exp')
 
 local cosh = function (r)
     return (luamath.exp(r) + luamath.exp(-r)) / 2
@@ -430,20 +429,22 @@ local sinh = function (r)
 end
 
 local complexCos = function(c)
-    return create(luamath.cos(re(c)) * cosh(im(c)), -luamath.sin(re(c)) * sinh(im(c)))
+    return simplifyNumber(makeComplex(luamath.cos(re(c)) * cosh(im(c)),
+                                     -luamath.sin(re(c)) * sinh(im(c))))
 end
 
 local complexSin = function(c)
-    return create(luamath.sin(re(c)) * cosh(im(c)),  luamath.cos(re(c)) * sinh(im(c)))
+    return simplifyNumber(makeComplex(luamath.sin(re(c)) * cosh(im(c)),
+                                      luamath.cos(re(c)) * sinh(im(c))))
 end
 
 local cos = applyOldOrNew(complexCos, luamath.cos, 'cos')
 local sin = applyOldOrNew(complexSin, luamath.sin, 'sin')
 
 local tan = applyOldOrNew(
-    function(c) return complexSin(c) / complexCos(c) end,
-    luamath.tan,
-    'tan')
+        function(c) return complexSin(c) / complexCos(c) end,
+        luamath.tan,
+        'tan')
 
 local complexAcos = function(c)
     return -I * log(c + I * sqrt(1 - c*c))
@@ -463,11 +464,12 @@ local normalizeAsin = function(c, low, high)
     -- get r < high, flipping around high.  (sin function is symmetric there.)
     while r >= high do r = 2*high - r end
 
-    return create(r, i)
+    return makeComplex(r, i)
 end
 
 local complexAsin = function(c)
-    return  normalizeAsin(-I * log(I * c + sqrt(1 - c*c)), -luamath.pi/2, luamath.pi/2)
+    return  simplifyNumber(normalizeAsin(-I * log(I * c + sqrt(1 - c*c)),
+                                         -luamath.pi/2, luamath.pi/2))
 end
 
 local normalizeAtan = function(c, low, high)
@@ -480,36 +482,37 @@ local normalizeAtan = function(c, low, high)
     -- get r < high
     while r >= high do r = r - luamath.pi end
 
-    return create(r, i)
+    return makeComplex(r, i)
 end
 
 local complexAtan = function(num, den)
-    den = den or create(1)
+    den = den or 1
 
     if den == I * 0 then
         return 0
     else
         local x = num / den
-        return normalizeAtan(I / 2 * log((I + x) / (I - x)), -luamath.pi/2, luamath.pi/2)
+        return simplifyNumber(normalizeAtan(I / 2 * log((I + x) / (I - x)),
+                                           -luamath.pi/2, luamath.pi/2))
     end
 end
 
 local acos  = applyOldOrNew(
-        complexAcos,
-        function(r) return luamath.abs(r) > 1 and complexAcos(r) or luamath.acos(r) end,
-        'acos')
+    complexAcos,
+    function(r) return luamath.abs(r) > 1 and complexAcos(r) or luamath.acos(r) end,
+    'acos')
 
 local asin  = applyOldOrNew(
-        complexAsin,
-        function(r) return luamath.abs(r) > 1 and complexAsin(r) or luamath.asin(r) end,
-        'asin')
+    complexAsin,
+    function(r) return luamath.abs(r) > 1 and complexAsin(r) or luamath.asin(r) end,
+    'asin')
 
 local atan  = applyOldOrNew(complexAtan, luamath.atan,  'atan')
 
 local atan2 = applyOldOrNew(
-        complexAtan,
-        function(num, den) den = den or 1; return luamath.atan2(num, den) end,
-        'atan2')
+    complexAtan,
+    function(num, den) den = den or 1; return luamath.atan2(num, den) end,
+    'atan2')
 
 local cmath = {}
 
@@ -527,7 +530,7 @@ for k,v in pairs(luamath) do
 end
 
 -- new things in cmath..
-cmath.i       = create(0, 1)
+cmath.i       = makeComplex(0, 1)
 cmath.angle   = angle
 cmath.re      = re
 cmath.im      = im
