@@ -864,3 +864,9 @@ if TESTX then
                       'atan ' .. j .. ' ' .. relError(expected_atan, actual_atan))
     end
 end
+
+if TESTX then
+    local t = {}
+    t[i+1] = 4
+    test:check(4, t[i+1], "table index")
+end
