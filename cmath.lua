@@ -25,4 +25,12 @@
 cmath = require 'cmath_anon'
 i, e, pi = cmath.i, cmath.exp(1), cmath.pi
 
+type = function(value)
+    if cmath.type(value) ~= nil then
+        return 'number'
+    else
+        return type(value)
+    end
+end
+
 return cmath

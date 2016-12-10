@@ -22,10 +22,10 @@
     can be used.
 --]]
 
-local luamath = math
-local c3 = {}
+local cmath = {}
 
-c3.eps = 1e-12
+local luamath = math
+local complex_mt = {}
 
 local makeComplex
 
@@ -54,18 +54,43 @@ local vmode = { __mode = 'v' }
 local values = {}
 setmetatable(values, kmode)
 
+-- as with strings, we would like multiple instances of
+-- the same complex number to have the same reference.
+--
+-- that permits, for example, "t[i+1] = 10; t[i+1] == 10".
+--
+-- so when we are about to construct a new complex number
+-- with real part x and imaginary part y, we want to see
+-- if we already have that value, and if so we reuse
+-- the existing copy.
+--
 -- if values[c] is {real = x, imag = y}, then
 -- valueInverse[x][y] is c
 
 local valueInverse = {}
 setmetatable(valueInverse, vmode)
 
+cmath.eps = 1e-12
+
+-- consider two numbers (float or int) to be approximately equal if
+-- they are within epsilon of each other or if their
+-- relative error is within epsilon.
+-- if epsilon is zero, this function reduces to exact equality.
+function near(x,y)
+    if cmath.eps == 0 then return x == y end
+
+    if 1 <= luamath.abs(x) and luamath.abs(x) <= luamath.abs(y) then
+        x, y = 1, y/x
+
+    elseif 1 <= luamath.abs(y) and luamath.abs(y) <= luamath.abs(x) then
+        x, y = x/y, 1
+    end
+
+    return luamath.abs(x-y) <= cmath.eps
+end
+
 local is_complex = function(c)
-    local fn = function() return values[c] ~= nil end
-
-    local okPcall, result = pcall(fn)
-
-    return okPcall and result
+    return values[c] ~= nil
 end
 
 local function cmath_type(c)
@@ -107,26 +132,21 @@ local im = function(c)
 end
 
 local function closeToInt(r)
-    local _, frac = math.modf(r)
+    local int, _ = math.modf(r)
 
-    if math.abs(frac) < c3.eps then
-        return true
-    else
-        local nearOne = math.abs(frac) - 1
-        return math.abs(nearOne) < c3.eps
-    end
+    return near(int, r) or near(int+1, r) or near(int-1, r)
 end
 
 local function toIntIfPossible(r)
     if not closeToInt(r) then return r end
 
-    local int, frac = math.modf(r)
+    local int, _ = math.modf(r)
     local result
 
-    if math.abs(frac) < c3.eps then
+    if near(int, r) then
         result = int
 
-    elseif frac > 0 then
+    elseif near(int + 1, r) then
         result = int + 1
 
     else
@@ -136,7 +156,7 @@ local function toIntIfPossible(r)
     return result
 end
 if TESTX then
-    local eps2 = c3.eps / 2
+    local eps2 = cmath.eps / 2
     test:check( 4, toIntIfPossible( 4 + eps2), 'toIntIfPossible  4+eps')
     test:check( 4, toIntIfPossible( 4 - eps2), 'toIntIfPossible  4-eps')
     test:check(-4, toIntIfPossible(-4 + eps2), 'toIntIfPossible -4+eps')
@@ -150,7 +170,7 @@ end
 local simplifyNumber = function(c)
     local result
 
-    if math.abs(im(c)) < c3.eps then
+    if near(im(c), 0) then
         result = toIntIfPossible(re(c))
     else
         result = c 
@@ -227,7 +247,7 @@ makeComplex = function(...)
 
     else
         local newc = {}
-        setmetatable(newc, c3)
+        setmetatable(newc, complex_mt)
 
         values[newc] = {real = real, imag = imag}
 
@@ -263,15 +283,15 @@ local function imagToString(im)
     end
 end
 
-c3.__tostring = function(c)
+complex_mt.__tostring = function(c)
     local real, addsign, imag = re(c), '+', im(c)
 
-    if luamath.abs(real) < c3.eps then real = 0.0 end
-    if luamath.abs(imag) < c3.eps then imag = 0.0 end
+    if near(real, 0) then real = 0.0 end
+    if near(imag, 0) then imag = 0.0 end
 
     if imag < 0 then addsign, imag = '-', -imag end
 
-    if imag == 0.0 then
+    if imag == 0 then
         return tostring(realToString(real))
 
     elseif real == 0.0 then
@@ -288,29 +308,29 @@ c3.__tostring = function(c)
     end
 end
 
-c3.__len = function(v1, v2)
+complex_mt.__len = function(v1, v2)
     error('attempt to get length of a complex value')
 end
 
-c3.__add = function(v1, v2)
+complex_mt.__add = function(v1, v2)
     v1, v2 = to_complex(v1), to_complex(v2)
 
     return simplifyNumber(makeComplex(re(v1) + re(v2), im(v1) + im(v2)))
 end
 
-c3.__sub = function(v1, v2)
+complex_mt.__sub = function(v1, v2)
     v1, v2 = to_complex(v1), to_complex(v2)
 
     return simplifyNumber(makeComplex(re(v1) - re(v2), im(v1) - im(v2)))
 end
 
-c3.__unm = function(v)
+complex_mt.__unm = function(v)
     v = to_complex(v)
 
     return simplifyNumber(makeComplex(-re(v), -im(v)))
 end
 
-c3.__mul = function(v1, v2)
+complex_mt.__mul = function(v1, v2)
     v1, v2 = to_complex(v1), to_complex(v2)
 
     return simplifyNumber(makeComplex(re(v1) * re(v2) - im(v1) * im(v2),
@@ -323,8 +343,8 @@ end
 -- but that would be computationally expensive and not
 -- really worth it anyway.)
 
-c3.__eq = function(v1, v2, eps)
-    eps = eps or c3.eps
+complex_mt.__eq = function(v1, v2, eps)
+    eps = eps or cmath.eps
 
     v1, v2 = to_complex(v1), to_complex(v2)
 
@@ -332,7 +352,7 @@ c3.__eq = function(v1, v2, eps)
            and luamath.abs(im(v1) - im(v2)) < eps
 end
 
-c3.__div = function(v1, v2)
+complex_mt.__div = function(v1, v2)
     v2 = to_complex(v2)
 
     local v2InverseDenom = re(v2) * re(v2) + im(v2) * im(v2)
@@ -347,7 +367,7 @@ local abs = applyOldOrNew(
     function(c) return luamath.sqrt(re(c)*re(c) + im(c)*im(c)) end,
     luamath.abs, 'abs')
 
-c3.__pow = function(c, cpow)
+complex_mt.__pow = function(c, cpow)
     c, cpow = to_complex(c), to_complex(cpow)
 
     local r     = abs(c)
@@ -362,44 +382,44 @@ c3.__pow = function(c, cpow)
     return simplifyNumber(result)
 end
 
-c3.__index = function(t, key)
+complex_mt.__index = function(t, key)
     error("error:  " ..
            "attempt to index a complex number.")
 end
 
-c3.__newindex =
+complex_mt.__newindex =
     function()
         error("error:  " ..
                "cannot create or change fields in a complex value")
     end
 
-c3.__lt =
+complex_mt.__lt =
     function()
         error("error:  " ..
                "complex numbers are not totally ordered.")
     end
 
-c3.__le =
+complex_mt.__le =
     function()
         error("error:  " ..
                "complex numbers are not totally ordered.")
     end
 
-c3.__mod =
+complex_mt.__mod =
     function()
         error("error:  " ..
                "modular arithmetic is not defined on complex numbers.")
     end
 
-c3.__idiv =
+complex_mt.__idiv =
     function()
         error("error:  " ..
                "integer division is not defined on complex numbers.")
     end
 
-c3.__metatable = "There is no metatable."
+complex_mt.__metatable = "There is no metatable."
 
-c3.__pairs =
+complex_mt.__pairs =
     function()
         error("bad argument #1 to 'pairs' (table expected, got complex value)")
     end
@@ -528,8 +548,6 @@ local atan2 = applyOldOrNew(
     function(num, den) den = den or 1; return luamath.atan2(num, den) end,
     'atan2')
 
-local cmath = {}
-
 -- cmath operations derived from the math library can only be applied
 -- to non-complex numbers by default.
 
@@ -548,6 +566,7 @@ cmath.i       = makeComplex(0, 1)
 cmath.angle   = angle
 cmath.re      = re
 cmath.im      = im
+-- cmath.eps defined above.
 
 -- math library functions with extensions to work on complex numbers..
 cmath.type    = cmath_type
