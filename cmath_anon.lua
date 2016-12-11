@@ -68,7 +68,7 @@ setmetatable(values, kmode)
 -- valueInverse[x][y] is c
 
 local valueInverse = {}
-setmetatable(valueInverse, vmode)
+--setmetatable(valueInverse, vmode)
 
 cmath.eps = 1e-12
 
@@ -253,6 +253,7 @@ makeComplex = function(...)
 
         if valueInverse[real] == nil then
             valueInverse[real] = {}
+            setmetatable(valueInverse[real], vmode)
         end
 
         valueInverse[real][imag] = newc
