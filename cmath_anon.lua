@@ -65,10 +65,32 @@ setmetatable(values, kmode)
 -- the existing copy.
 --
 -- if values[c] is {real = x, imag = y}, then
--- valueInverse[x][y] is c
+-- inverseValues[x][y] is c
+--
+-- inverseValues[x] is a value-weak table.
 
-local valueInverse = {}
---setmetatable(valueInverse, vmode)
+local inverseValues = {}
+setmetatable(inverseValues, vmode)
+
+--[[
+-- print state of values[c] and inverseValues[real][imag].
+--
+-- if all complex values have been deleted, the content of these tables
+-- should be garbage-collected and empty.
+--
+function dbstate()
+    print('values:')
+    for k,v in pairs(values) do print(k,v) end
+
+    print('inverse values:')
+    for k,v in pairs(inverseValues) do
+        print(k, '(real table)')
+        for k1,v1 in pairs(inverseValues[k]) do
+            print(k, k1,v1)
+        end
+    end
+end
+--]]
 
 cmath.eps = 1e-12
 
@@ -242,8 +264,8 @@ makeComplex = function(...)
     real = toIntIfPossible(real)
     imag = toIntIfPossible(imag)
 
-    if valueInverse[real] and valueInverse[real][imag] then
-        result = valueInverse[real][imag]
+    if inverseValues[real] and inverseValues[real][imag] then
+        result = inverseValues[real][imag]
 
     else
         local newc = {}
@@ -251,12 +273,19 @@ makeComplex = function(...)
 
         values[newc] = {real = real, imag = imag}
 
-        if valueInverse[real] == nil then
-            valueInverse[real] = {}
-            setmetatable(valueInverse[real], vmode)
+        if inverseValues[real] == nil then
+            inverseValues[real] = {}
+            setmetatable(inverseValues[real], vmode)
         end
 
-        valueInverse[real][imag] = newc
+        -- when no complex numbers exist with a given
+        -- real part, we want to garbage collect the
+        -- first-level table of inverseValues, which
+        -- will be an empty table at that point.
+
+        values[newc].inverseRef = inverseValues[real]
+
+        inverseValues[real][imag] = newc
 
         result = newc
     end
