@@ -301,30 +301,45 @@ local to_complex = function(c)
     return c
 end
 
+local function isInt(n)
+    if luamath.type then
+        return luamath.type(n) == 'integer'
+    else
+        local _,frac = luamath.modf(n)
+        return frac == 0
+    end
+end
+
+local realFractionDigits = "%-.3f"
+
 local function realToString(re)
-    return tostring(re)
+    if isInt(re) then
+        return tostring(re)
+    else
+        return string.format(realFractionDigits, re)
+    end
 end
 
 local function imagToString(im)
     if im == 1 then
         return 'i'
     else
-        return 'i * ' ..tostring(im)
+        return 'i * ' .. realToString(im)
     end
 end
 
 complex_mt.__tostring = function(c)
     local real, addsign, imag = re(c), '+', im(c)
 
-    if near(real, 0) then real = 0.0 end
-    if near(imag, 0) then imag = 0.0 end
+    if near(real, 0) then real = 0 end
+    if near(imag, 0) then imag = 0 end
 
     if imag < 0 then addsign, imag = '-', -imag end
 
     if imag == 0 then
         return tostring(realToString(real))
 
-    elseif real == 0.0 then
+    elseif real == 0 then
         if addsign == '+' then addsign = '' end
 
         return string.format('%s%s',
