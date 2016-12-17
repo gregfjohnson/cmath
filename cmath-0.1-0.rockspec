@@ -16,20 +16,20 @@ description = {
    evaluate to the same complex number refer to the same internal stored
    object.  This makes it possible to use complex values as table indices.
 
-                    cmath.sqrt(-1) == i          ==>  true
-                    e^(i*pi) == -1               ==>  true
-                    t = {}
-                    t[3 + 7*i] = 12
-                    t[1 + 2 + 3*i + 4*i] == 12   ==>  true
+            cmath.sqrt(-1) == i          ==>  true
+            e^(i*pi) == -1               ==>  true
+            t = {}
+            t[3 + 7*i] = 12
+            t[1 + 2 + 3*i + 4*i] == 12   ==>  true
 
-    cmath is not "industrial-grade" from the perspectives of high
-    performance or high numerical accuracy.  It is intended to be fun,
-    easy to install and use, and good for playing around with complex
-    numbers on small projects.
+   cmath is not "industrial-grade" from the perspectives of high
+   performance or high numerical accuracy.  It is intended to be fun,
+   easy to install and use, and good for playing around with complex
+   numbers on small projects.
 
-    If you need optimized performance or high-quality numerical results,
-    you might want to look at lcomplex:
-        http://webserver2.tecgraf.puc-rio.br/~lhf/ftp/lua.
+   If you need optimized performance or high-quality numerical results,
+   you might want to look at lcomplex:
+       http://webserver2.tecgraf.puc-rio.br/~lhf/ftp/lua.
    ]],
    homepage = "http://github.com/gregfjohnson/cmath",
    license = "GPL-2"
