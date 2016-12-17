@@ -1,25 +1,22 @@
 -----------------------------------------------------------------------------
 -- Copyright (c) Greg Johnson, Gnu Public Licence v. 2.0.
 -----------------------------------------------------------------------------
+-- Version 0.1.0.
 --[[
     Standard usage is:
 
     require 'cmath'
 
-    This creates a new global variable 'cmath', a table that
-    is backward-compatible with the standard lua math library
-    but adds complex arithmetic.
+    This creates a new global name 'cmath', a table that is
+    backward-compatible with the standard lua math library but adds
+    complex arithmetic.
+    
+    It also adds ctype(), an update to type() that understands complex
+    values, and the constants e, i, and pi.
 
-    For situations where implicit modifications to the global
-    namespace are to be avoided,
+    To avoid modifications to the global namespace:
 
     local ComplexMath= require 'cmath_anon' 
-
-    or even
-
-    math = require 'cmath_anon'
-
-    can be used.
 --]]
 
 local cmath = {}
@@ -310,13 +307,13 @@ local function isInt(n)
     end
 end
 
-local realFractionDigits = "%-.3f"
+cmath.format = "%.3f"
 
 local function realToString(re)
     if isInt(re) then
         return tostring(re)
     else
-        return string.format(realFractionDigits, re)
+        return string.format(cmath.format, re)
     end
 end
 
