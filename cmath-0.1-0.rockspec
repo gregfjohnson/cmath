@@ -9,7 +9,7 @@ description = {
    cmath.lua is a pure-lua extension of the lua standard math library
    that includes complex arithmetic.  The goal of this complex arithmetic
    library is complete and seamless integration into lua.  cmath includes
-   complex arithmetic with operator overloading via metatables, togther
+   complex arithmetic with operator overloading via metatables, together
    with extensions of all math library functions.  Complex operations
    return real values where possible, enabling equality comparisons with
    standard numbers.  As with lua strings, different expressions that
